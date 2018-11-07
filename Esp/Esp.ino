@@ -2,16 +2,34 @@
 #include <SoftwareSerial.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
+#include <Ethernet.h>
+#include <ICMPPing.h>
 
+//WiFi Info
 const char *essid="Robocenter615";
 const char *key="123456789";
+
+//WebAPi Info
+IPAddress computerHost(10, 10, 143, 73);
+int computerHostPort = 5050;
+String url = "/api/GpsData";
+String ipStr = "10.10.143.73:5050";
+
 
 int status = WL_IDLE_STATUS; 
 static const int RXPin = D5, TXPin = D6;
 static const uint32_t GPSBaud = 9600;
 SoftwareSerial ss(RXPin, TXPin);
 TinyGPSPlus gps;
+WiFiClient clientCommon;
+bool postRequestSend = false;
 
+IPAddress pingAddr(10,10,143,73);
+SOCKET pingSocket = 0;
+char buffer [256];
+ICMPPing ping(pingSocket, (uint16_t)random(0, 255));
+
+String Id;
 void setup() {
   Serial.begin(115200);
   while (!Serial) {
@@ -28,59 +46,26 @@ while(WiFi.status() != WL_CONNECTED)
     Serial.print(".");
 }
 Serial.println("WiFi connected");
- 
-
-Serial.print("You're connected to the network");
+  Serial.print("Connected, IP address: ");
+  Serial.println(WiFi.localIP());
 }
  
 void loop() {
- //printInt(gps.satellites.value(), gps.satellites.isValid(), 5);
- //printFloat(gps.hdop.hdop(), gps.hdop.isValid(), 6, 1);
- //printFloat(gps.location.lat(), gps.location.isValid(), 11, 6);
- //printFloat(gps.location.lng(), gps.location.isValid(), 12, 6);
- //printInt(gps.location.age(), gps.location.isValid(), 5);
-   delay(10000);
-}
-
-
-static void printFloat(float val, bool valid, int len, int prec)
-{
-  if (!valid)
-  {
-    while (len-- > 1)
-      Serial.print('*');
-    Serial.print(' ');
+  Serial.println("Loop started");
+String sendData = "{\"Latitude\":180.0,\"Lontitude\":8.0,\"Satellite\":8}";
+Id = SendPostRequest(sendData);
+   delay(20000); 
   }
-  else
-  {
-    Serial.print(val, prec);
-    int vi = abs((int)val);
-    int flen = prec + (val < 0.0 ? 2 : 1); // . and -
-    flen += vi >= 1000 ? 4 : vi >= 100 ? 3 : vi >= 10 ? 2 : 1;
-    for (int i=flen; i<len; ++i)
-      Serial.print(' ');
-  }
-  smartDelay(0);
-}
-static void smartDelay(unsigned long ms)
-{
-  unsigned long start = millis();
-  do 
-  {
-    while (ss.available())
-      gps.encode(ss.read());
-  } while (millis() - start < ms);
-}
-static void printInt(unsigned long val, bool valid, int len)
-{
-  char sz[32] = "*****************";
-  if (valid)
-    sprintf(sz, "%ld", val);
-  sz[len] = 0;
-  for (int i=strlen(sz); i<len; ++i)
-    sz[i] = ' ';
-  if (len > 0) 
-    sz[len-1] = ' ';
-  Serial.print(sz);
-  smartDelay(0);
+
+String SendPostRequest(String data) {
+HTTPClient http;
+http.begin(ipStr+url);  //Specify request destination
+http.addHeader("Content-Type", "application/json"); 
+int httpCode = http.POST(data);   //Send the request
+   String payload = http.getString();//Get the response payload
+   Serial.println(httpCode);   //Print HTTP return code
+   Serial.println(payload);    //Print request response payload
+ 
+   http.end();  //Close connection
+   return payload[6];
 }
