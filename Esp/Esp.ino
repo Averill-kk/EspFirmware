@@ -30,6 +30,7 @@ char buffer [256];
 ICMPPing ping(pingSocket, (uint16_t)random(0, 255));
 
 String Id;
+char* messageId;
 void setup() {
   Serial.begin(115200);
   while (!Serial) {
@@ -51,11 +52,23 @@ Serial.println("WiFi connected");
 }
  
 void loop() {
-  Serial.println("Loop started");
-String sendData = "{\"Latitude\":180.0,\"Lontitude\":8.0,\"Satellite\":8}";
+float flat, flon;
+Serial.println("Loop started");
+Serial.print("Satellites in view: ");
+Serial.println(gps.satellites.value());
+      if (gps.satellites.value() < 6)
+      {
+        Serial.print("No fix.");
+      }
+      else
+      {
+        String sendData = "{\"Latitude\":"+String(gps.location.lat())+",\"Lontitude\":"+String(gps.location.lng())+",\"Satellite\":"+String(gps.satellites.value())+"}";
 Id = SendPostRequest(sendData);
-   delay(20000); 
+Id.toCharArray(messageId,9);
+
+   delay(10000); 
   }
+ }
 
 String SendPostRequest(String data) {
 HTTPClient http;
@@ -67,5 +80,5 @@ int httpCode = http.POST(data);   //Send the request
    Serial.println(payload);    //Print request response payload
  
    http.end();  //Close connection
-   return payload[6];
+   return payload;
 }
