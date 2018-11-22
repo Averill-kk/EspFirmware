@@ -13,11 +13,11 @@ const char *key="123456789";
 IPAddress computerHost(10, 10, 143, 73);
 int computerHostPort = 5050;
 String url = "/api/GpsData";
-String ipStr = "10.10.143.73:5050";
+String ipStr = "http://10.10.143.73:5050";
 
 
 int status = WL_IDLE_STATUS; 
-static const int RXPin = D5, TXPin = D6;
+static const int RXPin = D6, TXPin = D5;
 static const uint32_t GPSBaud = 9600;
 SoftwareSerial ss(RXPin, TXPin);
 TinyGPSPlus gps;
