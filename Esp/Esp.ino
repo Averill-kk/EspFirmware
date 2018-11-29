@@ -56,22 +56,23 @@ float flat, flon;
 Serial.println("Loop started");
 Serial.print("Satellites in view: ");
 Serial.println(gps.satellites.value());
-      if (gps.satellites.value() < 6)
+      if (gps.satellites.value()< 6)
       {
         Serial.print("No fix.");
       }
       else
       {
 String sendDataPost = "{\"Latitude\":"+String(gps.location.lat())+",\"Lontitude\":"+String(gps.location.lng())+",\"Satellite\":"+String(gps.satellites.value())+"}";
-Serial.println(messageId);
 if(!postRequestSend)
 {
-  Id = SendPostRequest(sendDataPost)[7];
+  //TODO Parce id from SendPostRequest string
+  Id = SendPostRequest(sendDataPost)[6];
   postRequestSend = true;
 }else
 {
-  String sendDataPut = "{\"id\":"+Id+",Latitude\":"+String(gps.location.lat())+",\"Lontitude\":"+String(gps.location.lng())+",\"Satellite\":"+String(gps.satellites.value())+"}";
+  String sendDataPut = "{\"id\":"+Id+",\"Latitude\":"+String(gps.location.lat())+",\"Lontitude\":"+String(gps.location.lng())+",\"Satellite\":"+String(gps.satellites.value())+"}";
   SendPutRequest(sendDataPut,Id);
+  
 }
    delay(10000); 
   }
