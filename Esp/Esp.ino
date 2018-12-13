@@ -5,7 +5,7 @@
 #include <Ethernet.h>
 
 //Device ID
-String Id = "1";
+String id = "1";
 
 
 //WiFi Info
@@ -18,7 +18,7 @@ int computerHostPort = 5050;
 String url = "/api/GpsData";
 String ipStr = "http://10.10.143.73:5050";
 
-
+//Board Options
 int status = WL_IDLE_STATUS; 
 static const int RXPin = D5, TXPin = D6;
 static const uint32_t GPSBaud = 9600;
@@ -26,16 +26,11 @@ SoftwareSerial ss(RXPin, TXPin);
 TinyGPSPlus gps;
 WiFiClient clientCommon;
 
-
-char messageId;
 void setup() {
   Serial.begin(115200);
   while (!Serial) {
-    ; 
-       
+    ;     
   }
- 
-  // задаем скорость передачи данных через порт SoftwareSerial:
   ss.begin(GPSBaud);
 WiFi.begin(essid,key);
 while(WiFi.status() != WL_CONNECTED)
@@ -54,7 +49,7 @@ Serial.println(gps.satellites.value());
 if (true)
       {
 //String sendDataPost = "{\"Latitude\":"+String(gps.location.lat(),11)+",\"Lontitude\":"+String(gps.location.lng(),1)+",\"Satellite\":"+String(gps.satellites.value(), DEC)+"}";
-  String sendDataPut = "{\"id\":"+Id+",\"Latitude\":"+String(gps.location.lat(),11)+",\"Lontitude\":"+String(gps.location.lng(),11)+",\"Satellite\":"+String(gps.satellites.value(), DEC)+"}";
+  String sendDataPut = "{\"id\":"+id+",\"Latitude\":"+String(gps.location.lat(),11)+",\"Lontitude\":"+String(gps.location.lng(),11)+",\"Satellite\":"+String(gps.satellites.value(), DEC)+"}";
   SendPutRequest(sendDataPut,Id);
   delay(1000);
   }else
