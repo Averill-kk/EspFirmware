@@ -14,10 +14,9 @@ const char *essid="Robocenter";
 const char *key="123456789";
 
 //WebAPi Info
-IPAddress computerHost(10, 10, 143, 73);
 int computerHostPort = 5050;
-String url = "/api/GpsData";
-String ipStr = "http://10.10.143.73:5050";
+String url = "/api/GpsDatas";
+String ipStr = "http://95.213.199.81:8888";
 
 //Board Options
 int status = WL_IDLE_STATUS; 
