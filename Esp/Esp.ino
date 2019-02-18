@@ -15,8 +15,8 @@ const char *key="123456789";
 
 //WebAPi Info
 int computerHostPort = 5050;
-String url = "/api/GpsDatas";
-String ipStr = "http://95.213.199.81:8888";
+String url = "/api/GpsDatasApi";
+String ipStr = "http://naviboat.ru:5050";
 
 //Board Options
 int status = WL_IDLE_STATUS; 
