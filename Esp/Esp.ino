@@ -10,8 +10,8 @@ String id = "1";
 
 
 //WiFi Info
-const char *essid="Robocenter";
-const char *key="123456789";
+const char *essid="RT_5GZ";
+const char *key="1234567811";
 
 //WebAPi Info
 int computerHostPort = 5050;
@@ -26,6 +26,9 @@ SoftwareSerial ss(RXPin, TXPin);
 TinyGPSPlus gps;
 WiFiClient clientCommon;
 
+int battery = 0;
+String send_status = "Online";  
+
 void setup() {
   Serial.begin(115200);
   while (!Serial) {
@@ -35,8 +38,10 @@ void setup() {
 WiFi.begin(essid,key);
 while(WiFi.status() != WL_CONNECTED)
 {
+//Тушить диод подключения
     delay(500);
     Serial.print(".");
+//Зажигать диод подключения
 }
 Serial.println("WiFi connected");
   Serial.print("Connected, IP address: ");
@@ -83,16 +88,16 @@ Serial.println("WiFi connected");
 }
  
 void loop() {
-Serial.print("Satellites in view: ");
-Serial.println(gps.satellites.value());
-if (true)
+//Если спутников больше 3, отправляем данные
+if (gps.satellites.value()>3)
       {
-//String sendDataPost = "{\"Latitude\":"+String(gps.location.lat(),11)+",\"Lontitude\":"+String(gps.location.lng(),1)+",\"Satellite\":"+String(gps.satellites.value(), DEC)+"}";
-  String sendDataPut = "{\"id\":"+id+",\"Latitude\":"+String(gps.location.lat(),11)+",\"Lontitude\":"+String(gps.location.lng(),11)+",\"Satellite\":"+String(gps.satellites.value(), DEC)+"}";
+//Зажигать диод отправки данных
+  String sendDataPut = "{\"id\":"+id+",\"Latitude\":"+String(gps.location.lat(),11)+",\"Lontitude\":"+String(gps.location.lng(),11)+",\"Satellite\":"+String(gps.satellites.value(), DEC)+\"Battery\":"+String(battery, DEC) +\"Status\":"+send_status+"}";
   SendPutRequest(sendDataPut,id);
   delay(1000);
   }else
   {
+//Тушить диод отправки данных
      Serial.print("No fix.");
   }
    smartDelay(1000);
