@@ -6,8 +6,11 @@
 #include <ArduinoOTA.h>
 
 //Device ID
-String id = "1";
+String id = String(WiFi.macAddress()).substring(12);
+int num = 1;
 
+//Firmware
+String fw = "1.0";
 
 //WiFi Info
 const char *essid="RT-2.4GHz_WiFi_E556";
@@ -36,11 +39,11 @@ void setup() {
   }
   ss.begin(GPSBaud);
 WiFi.begin(essid,key);
-while(WiFi.status() != WL_CONNECTED)
+if(WiFi.status() != WL_CONNECTED)
 {
 //Тушить диод подключения
     delay(500);
-    Serial.print(".");
+    Serial.print("No wifi connect");
 //Зажигать диод подключения
 }
 Serial.println("WiFi connected");
@@ -82,26 +85,30 @@ Serial.println("WiFi connected");
     //  "Ошибка при завершении OTA-апдейта"
   });
   ArduinoOTA.begin();
-  Serial.println("Ready");  //  "Готово"
-  Serial.print("IP address: ");  //  "IP-адрес: "
-  Serial.println(WiFi.localIP());
+  if(ss.available())
+      gps.encode(ss.read());
+print_status(); //Print status
 }
  
 void loop() {
   ArduinoOTA.handle();
+  print_status(); //Print status
+
 //Если спутников больше 3, отправляем данные
 if (gps.satellites.value()>3)
       {
 //Зажигать диод отправки данных
-  String sendDataPut = "{\"id\":"+id+",\"Latitude\":"+String(gps.location.lat(),11)+",\"Lontitude\":"+String(gps.location.lng(),11)+",\"Satellite\":"+String(gps.satellites.value(), DEC)+",\"Battery\":"+String(battery, DEC) +",\"Status\":"+send_status+"}";
+  String sendDataPut = "{\"id\":\""+id+"\",\"Number\":"+String(num)+",\"Latitude\":"+String(gps.location.lat(),11)+",\"Lontitude\":"+String(gps.location.lng(),11)+",\"Satellite\":"+String(gps.satellites.value(), DEC)+",\"Battery\":"+String(battery, DEC) +",\"Status\":"+send_status+"}";
   SendPutRequest(sendDataPut,id);
+  Serial.print(sendDataPut);
   delay(1000);
   }else
   {
 //Тушить диод отправки данных
      Serial.print("No fix.");
-     String sendDataPut = "{\"id\":"+id+",\"Latitude\":"+String(-1)+",\"Lontitude\":"+String(-1)+",\"Satellite\":"+String(gps.satellites.value(), DEC)+",\"Battery\":"+String(battery, DEC) +",\"Status\":"+send_status+"}";
+     String sendDataPut = "{\"id\":\""+id+"\",\"Number\":"+String(num)+",\"Latitude\":"+String(gps.location.lat(),11)+",\"Lontitude\":"+String(gps.location.lng(),11)+",\"Satellite\":"+String(gps.satellites.value(), DEC)+",\"Battery\":"+String(battery, DEC) +",\"Status\":"+send_status+"}";
      SendPutRequest(sendDataPut,id);
+     Serial.print(sendDataPut);
      delay(1000);
   }
    smartDelay(1000);//считываение данных с GPS устройства
@@ -139,4 +146,21 @@ static void smartDelay(unsigned long ms)
     while (ss.available())
       gps.encode(ss.read());
   } while (millis() - start < ms);
+}
+static void print_status()
+{
+  Serial.print("Board ID: ");  //  Id
+  Serial.println(id);
+  Serial.print("Board ID: ");  //  Firmware
+  Serial.println(fw);
+  Serial.print("Battery: ");  //  Battery
+  Serial.println(battery);
+  Serial.print("GPS port avaible: ");  //  GPS
+  Serial.println(ss.available());
+  Serial.print("Satellite: ");  //  Satellite
+  Serial.println(gps.satellites.value());
+  Serial.print("IP address:");  //  "IP-адрес: "
+  Serial.println(WiFi.localIP());
+  Serial.print("MAC: ");
+   Serial.println(WiFi.macAddress());
 }
