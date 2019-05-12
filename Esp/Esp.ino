@@ -106,7 +106,7 @@ if (gps.satellites.value()>3)
   {
 //Тушить диод отправки данных
      Serial.print("No fix.");
-     String sendDataPut = "{\"id\":\""+id+"\",\"Number\":"+String(num)+",\"Latitude\":"+String(gps.location.lat(),11)+",\"Lontitude\":"+String(gps.location.lng(),11)+",\"Satellite\":"+String(gps.satellites.value(), DEC)+",\"Battery\":"+String(battery, DEC) +",\"Status\":"+send_status+"}";
+     String sendDataPut = "{\"id\":\""+id+"\",\"Number\":"+String(num)+",\"Latitude\":"+String(-1)+",\"Lontitude\":"+String(-1)+",\"Satellite\":"+String(gps.satellites.value(), DEC)+",\"Battery\":"+String(battery, DEC) +",\"Status\":"+send_status+"}";
      SendPutRequest(sendDataPut,id);
      Serial.print(sendDataPut);
      delay(1000);
