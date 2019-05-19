@@ -10,12 +10,14 @@ String id = String(WiFi.macAddress()).substring(12);
 int num = 1;
 
 //Firmware
-String fw = "1.0";
+String fw = "1.1";
 
 //WiFi Info
 const char *essid="RT-2.4GHz_WiFi_E556";
 const char *key="1234567811";
 
+const char* apssid = id.c_str();    // Имя точки доступа
+const char* appassword = "naviboat2019"; 
 //WebAPi Info
 int computerHostPort = 5050;
 String url = "/api/GpsDatasApi";
@@ -31,12 +33,12 @@ WiFiClient clientCommon;
 
 int battery = 2;
 String send_status = "\"Online\"";  
+bool firstBoot = true;
 
 void setup() {
   Serial.begin(115200);
-  while (!Serial) {
-    ;     
-  }
+  WiFi.mode(WIFI_AP_STA);
+  WiFi.softAP(apssid, appassword);
   ss.begin(GPSBaud);
 WiFi.begin(essid,key);
 if(WiFi.status() != WL_CONNECTED)
@@ -94,21 +96,25 @@ void loop() {
   ArduinoOTA.handle();
   print_status(); //Print status
 
+if(firstBoot && WiFi.status() == WL_CONNECTED )
+{
+  String sendDataPut = "{\"id\":\""+id+"\",\"Number\":"+String(num)+",\"Latitude\":"+String(-1)+",\"Lontitude\":"+String(-1)+",\"Satellite\":"+String(gps.satellites.value(), DEC)+",\"Battery\":"+String(battery, DEC) +",\"Status\":"+send_status+"}";
+  SendPostRequest(sendDataPut);
+  firstBoot = false;
+}
 //Если спутников больше 3, отправляем данные
 if (gps.satellites.value()>3)
       {
 //Зажигать диод отправки данных
   String sendDataPut = "{\"id\":\""+id+"\",\"Number\":"+String(num)+",\"Latitude\":"+String(gps.location.lat(),11)+",\"Lontitude\":"+String(gps.location.lng(),11)+",\"Satellite\":"+String(gps.satellites.value(), DEC)+",\"Battery\":"+String(battery, DEC) +",\"Status\":"+send_status+"}";
   SendPutRequest(sendDataPut,id);
-  Serial.print(sendDataPut);
   delay(1000);
   }else
   {
 //Тушить диод отправки данных
      Serial.print("No fix.");
-     String sendDataPut = "{\"id\":\""+id+"\",\"Number\":"+String(num)+",\"Latitude\":"+String(-1)+",\"Lontitude\":"+String(-1)+",\"Satellite\":"+String(gps.satellites.value(), DEC)+",\"Battery\":"+String(battery, DEC) +",\"Status\":"+send_status+"}";
+     String sendDataPut = "{\"id\":\""+id+"\",\"Number\":"+String(num)+",\"Latitude\":"+String(0)+",\"Lontitude\":"+String(-1)+",\"Satellite\":"+String(gps.satellites.value(), DEC)+",\"Battery\":"+String(battery, DEC) +",\"Status\":"+send_status+"}";
      SendPutRequest(sendDataPut,id);
-     Serial.print(sendDataPut);
      delay(1000);
   }
    smartDelay(1000);//считываение данных с GPS устройства
@@ -126,6 +132,7 @@ int httpCode = http.POST(data);   //Send the request
    http.end();  //Close connection
    return payload;
 }
+
 String  SendPutRequest(String data,String id) {
 HTTPClient http;
 http.begin(ipStr+url+"/"+id);  //Specify request destination
