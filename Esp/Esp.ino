@@ -9,8 +9,9 @@
 String id = String(WiFi.macAddress()).substring(12);
 int num = 1;
 
+
 //Firmware
-String fw = "1.1";
+String fw = "1.2";
 
 //WiFi Info
 const char *essid="RT-2.4GHz_WiFi_E556";
@@ -162,12 +163,16 @@ static void print_status()
   Serial.println(fw);
   Serial.print("Battery: ");  //  Battery
   Serial.println(battery);
-  Serial.print("GPS port avaible: ");  //  GPS
-  Serial.println(ss.available());
   Serial.print("Satellite: ");  //  Satellite
   Serial.println(gps.satellites.value());
   Serial.print("IP address:");  //  "IP-адрес: "
   Serial.println(WiFi.localIP());
   Serial.print("MAC: ");
    Serial.println(WiFi.macAddress());
+   if (millis() > 5000 && gps.charsProcessed() < 10)
+  {
+    Serial.println(F("No GPS detected: check wiring."));
+  }
+   
+
 }
