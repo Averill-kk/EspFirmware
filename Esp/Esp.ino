@@ -37,6 +37,8 @@ String send_status = "\"Online\"";
 bool firstBoot = true;
 
 void setup() {
+  pinMode(D7, OUTPUT);
+  pinMode(D8, OUTPUT);
   Serial.begin(115200);
   WiFi.mode(WIFI_AP_STA);
   WiFi.softAP(apssid, appassword);
@@ -44,10 +46,10 @@ void setup() {
 WiFi.begin(essid,key);
 if(WiFi.status() != WL_CONNECTED)
 {
-//Тушить диод подключения
+digitalWrite(D7, LOW);    // выключаем светодиод
     delay(500);
     Serial.print("No wifi connect");
-//Зажигать диод подключения
+digitalWrite(D7, HIGH);   // включаем светодиод
 }
 Serial.println("WiFi connected");
   Serial.print("Connected, IP address: ");
@@ -106,16 +108,19 @@ if(firstBoot && WiFi.status() == WL_CONNECTED )
 //Если спутников больше 3, отправляем данные
 if (gps.satellites.value()>3)
       {
-//Зажигать диод отправки данных
+digitalWrite(D8, HIGH);   // включаем светодиод
   String sendDataPut = "{\"id\":\""+id+"\",\"Number\":"+String(num)+",\"Latitude\":"+String(gps.location.lat(),11)+",\"Lontitude\":"+String(gps.location.lng(),11)+",\"Satellite\":"+String(gps.satellites.value(), DEC)+",\"Battery\":"+String(battery, DEC) +",\"Status\":"+send_status+"}";
   SendPutRequest(sendDataPut,id);
+digitalWrite(D7, LOW);    // выключаем светодиод
   delay(1000);
   }else
   {
 //Тушить диод отправки данных
      Serial.print("No fix.");
+digitalWrite(D8, HIGH);   // включаем светодиод
      String sendDataPut = "{\"id\":\""+id+"\",\"Number\":"+String(num)+",\"Latitude\":"+String(0)+",\"Lontitude\":"+String(-1)+",\"Satellite\":"+String(gps.satellites.value(), DEC)+",\"Battery\":"+String(battery, DEC) +",\"Status\":"+send_status+"}";
      SendPutRequest(sendDataPut,id);
+digitalWrite(D7, LOW);    // выключаем светодиод
      delay(1000);
   }
    smartDelay(1000);//считываение данных с GPS устройства
