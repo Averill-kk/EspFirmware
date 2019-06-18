@@ -2,7 +2,6 @@
 #include <SoftwareSerial.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
-#include <Ethernet.h>
 #include <ArduinoOTA.h>
 
 //Device ID
@@ -11,11 +10,11 @@ int num = 1;
 
 
 //Firmware
-String fw = "1.3";
+String fw = "1.3.1";
 
 //WiFi Info
-const char *essid="beacontest";
-const char *key="123456789";
+const char *essid="RT-2.4GHz_WiFi_E556";
+const char *key="1234567811";
 
 const char* apssid = id.c_str();    // Имя точки доступа
 const char* appassword = "naviboat2019"; 
@@ -36,6 +35,15 @@ int battery = 0;
 String send_status = "\"Online\"";  
 bool firstBoot = true;
 
+//Окно фильтрации координат
+long loopTime = 60000; // 60 seconds
+
+double last_filtered_lat = 0.0;
+double last_filtered_lng = 0.0;
+bool first_filter_boot = true;
+
+//Константа для проверки точек, если больше 2 метров, откидываем
+const double distance_check = 2;
 
 
 void setup() {
@@ -46,18 +54,7 @@ void setup() {
   WiFi.softAP(apssid, appassword);
   ss.begin(GPSBaud);
 WiFi.begin(essid,key);
-/*if(WiFi.status() != WL_CONNECTED)
-{
-digitalWrite(D7, HIGH);    // выключаем светодиод
-    delay(1000);
-    Serial.print("No wifi connect");
-digitalWrite(D7, LOW);   // включаем светодиод
-}
-else{digitalWrite(D7, HIGH);    // выключаем светодиод
-    delay(250);
-digitalWrite(D7, LOW);   // включаем светодиод
-  
-}*/
+
 Serial.println("WiFi connected");
   Serial.print("Connected, IP address: ");
   Serial.println(WiFi.localIP());
@@ -127,7 +124,7 @@ avgsensor = avgsensor + sensorValue;
   }
   
   // Convert the analog reading (which goes from 0 - 1023) to a voltage (0 - 3.2V):
- battery = (avgsensor / 3) * (3.2 / 1023.0)* 5.465 * 100;
+ battery = (avgsensor / 3) * (3.2 / 1023.0)* 5.465 ;
   // print out the value you read:
     Serial.print("sensorValue: ");
   Serial.println(sensorValue);
@@ -139,17 +136,20 @@ avgsensor = avgsensor + sensorValue;
   ArduinoOTA.handle();
   print_status(); //Print status
 
+//Считываем и фильтруем координаты
+getGPSCoord();
 if(firstBoot && WiFi.status() == WL_CONNECTED )
 {
   String sendDataPut = "{\"id\":\""+id+"\",\"Number\":"+String(num)+",\"Latitude\":"+String(-1)+",\"Lontitude\":"+String(-1)+",\"Satellite\":"+String(gps.satellites.value(), DEC)+",\"Battery\":"+String(battery, DEC) +",\"Status\":"+send_status+"}";
   SendPostRequest(sendDataPut);
   firstBoot = false;
 }
+smartDelay(1000);
 //Если спутников больше 3, отправляем данные
 if (gps.satellites.value()>3)
       {
 digitalWrite(D8, HIGH);   // включаем светодиод
-  String sendDataPut = "{\"id\":\""+id+"\",\"Number\":"+String(num)+",\"Latitude\":"+String(gps.location.lat(),11)+",\"Lontitude\":"+String(gps.location.lng(),11)+",\"Satellite\":"+String(gps.satellites.value(), DEC)+",\"Battery\":"+String(battery, DEC) +",\"Status\":"+send_status+"}";
+  String sendDataPut = "{\"id\":\""+id+"\",\"Number\":"+String(num)+",\"Latitude\":"+String(last_filtered_lat,11)+",\"Lontitude\":"+String(last_filtered_lng,11)+",\"Satellite\":"+String(gps.satellites.value(), DEC)+",\"Battery\":"+String(battery, DEC) +",\"Status\":"+send_status+"}";
   SendPutRequest(sendDataPut,id);
 digitalWrite(D8, LOW);    // выключаем светодиод
   delay(1000);
@@ -163,7 +163,6 @@ digitalWrite(D8, HIGH);   // включаем светодиод
 digitalWrite(D8, LOW);    // выключаем светодиод
      delay(1000);
   }
-   smartDelay(1000);//считываение данных с GPS устройства
  }
 
 String SendPostRequest(String data) {
@@ -220,4 +219,57 @@ static void print_status()
   }
    
 
+}
+
+static void getGPSCoord()
+{
+bool hasFix = false;
+std::vector<double> latitude;
+std::vector<double> lontitude;
+  unsigned long currentMillis = millis();
+while(millis()-currentMillis<=loopTime)
+  {
+    smartDelay(1000);
+    //Если спутников больше 3, считываем координаты 
+if (gps.satellites.value()>3)
+      {
+        //Проверяем "Свежесть" координат
+        if (gps.location.isUpdated())
+        {
+             //Считаем растояние до новой точки
+              double distance = TinyGPSPlus::distanceBetween(
+                            gps.location.lat(),
+                            gps.location.lng(),
+                            last_filtered_lat,
+                            last_filtered_lng);
+              if(distance < distance_check && first_filter_boot)
+              {
+                  hasFix = true;
+                  latitude.push_back(gps.location.lat());
+                  lontitude.push_back(gps.location.lng());
+                  Serial.print("Add to LAT vector: "); Serial.println(gps.location.lat(), 11);
+                  Serial.print("Add to LON vector: "); Serial.println(gps.location.lng(),11);
+              }else 
+              {
+                last_filtered_lat = gps.location.lat();
+                last_filtered_lng = gps.location.lng();
+              }
+        }
+      }else
+      {
+        hasFix = false;
+        Serial.println("No GPS FIX: Satelites < 3");
+        break;
+      }
+      delay(1000);
+  }
+  if(hasFix)
+  {
+  last_filtered_lat = 1.0 * std::accumulate(latitude.begin(), latitude.end(), 0.0) / latitude.size();
+  last_filtered_lng = 1.0 * std::accumulate(lontitude.begin(), lontitude.end(), 0.0) / lontitude.size();
+Serial.print("LAST filtered LAT= ");  Serial.println(last_filtered_lat, 11);
+Serial.print("LAST filtered LONG= "); Serial.println(last_filtered_lng,11);
+  }
+
+  
 }
