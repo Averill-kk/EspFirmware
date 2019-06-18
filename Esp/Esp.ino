@@ -11,11 +11,11 @@ int num = 1;
 
 
 //Firmware
-String fw = "1.2";
+String fw = "1.3";
 
 //WiFi Info
-const char *essid="RT-2.4GHz_WiFi_E556";
-const char *key="1234567811";
+const char *essid="beacontest";
+const char *key="123456789";
 
 const char* apssid = id.c_str();    // Имя точки доступа
 const char* appassword = "naviboat2019"; 
@@ -32,9 +32,11 @@ SoftwareSerial ss(RXPin, TXPin);
 TinyGPSPlus gps;
 WiFiClient clientCommon;
 
-int battery = 2;
+int battery = 0;
 String send_status = "\"Online\"";  
 bool firstBoot = true;
+
+
 
 void setup() {
   pinMode(D7, OUTPUT);
@@ -44,13 +46,18 @@ void setup() {
   WiFi.softAP(apssid, appassword);
   ss.begin(GPSBaud);
 WiFi.begin(essid,key);
-if(WiFi.status() != WL_CONNECTED)
+/*if(WiFi.status() != WL_CONNECTED)
 {
-digitalWrite(D7, LOW);    // выключаем светодиод
-    delay(500);
+digitalWrite(D7, HIGH);    // выключаем светодиод
+    delay(1000);
     Serial.print("No wifi connect");
-digitalWrite(D7, HIGH);   // включаем светодиод
+digitalWrite(D7, LOW);   // включаем светодиод
 }
+else{digitalWrite(D7, HIGH);    // выключаем светодиод
+    delay(250);
+digitalWrite(D7, LOW);   // включаем светодиод
+  
+}*/
 Serial.println("WiFi connected");
   Serial.print("Connected, IP address: ");
   Serial.println(WiFi.localIP());
@@ -96,6 +103,39 @@ print_status(); //Print status
 }
  
 void loop() {
+if(WiFi.status() != WL_CONNECTED)
+{
+digitalWrite(D7, HIGH);    // выключаем светодиод
+    delay(1000);
+    Serial.print("No wifi connect");
+digitalWrite(D7, LOW);   // включаем светодиод
+}
+else{digitalWrite(D7, HIGH);    // выключаем светодиод
+    delay(100);
+digitalWrite(D7, LOW);   // включаем светодиод
+  
+}
+
+// read the input on analog pin 0:
+  int avgsensor = 0;
+  int sensorValue = 0;
+  for (int i =0; i < 3; i++)
+  {
+  int sensorValue = analogRead(A0);
+avgsensor = avgsensor + sensorValue;
+  
+  }
+  
+  // Convert the analog reading (which goes from 0 - 1023) to a voltage (0 - 3.2V):
+ battery = (avgsensor / 3) * (3.2 / 1023.0)* 5.465 * 100;
+  // print out the value you read:
+    Serial.print("sensorValue: ");
+  Serial.println(sensorValue);
+    Serial.print("voltage: ");
+  Serial.println(battery);
+  
+
+  
   ArduinoOTA.handle();
   print_status(); //Print status
 
@@ -111,7 +151,7 @@ if (gps.satellites.value()>3)
 digitalWrite(D8, HIGH);   // включаем светодиод
   String sendDataPut = "{\"id\":\""+id+"\",\"Number\":"+String(num)+",\"Latitude\":"+String(gps.location.lat(),11)+",\"Lontitude\":"+String(gps.location.lng(),11)+",\"Satellite\":"+String(gps.satellites.value(), DEC)+",\"Battery\":"+String(battery, DEC) +",\"Status\":"+send_status+"}";
   SendPutRequest(sendDataPut,id);
-digitalWrite(D7, LOW);    // выключаем светодиод
+digitalWrite(D8, LOW);    // выключаем светодиод
   delay(1000);
   }else
   {
@@ -120,7 +160,7 @@ digitalWrite(D7, LOW);    // выключаем светодиод
 digitalWrite(D8, HIGH);   // включаем светодиод
      String sendDataPut = "{\"id\":\""+id+"\",\"Number\":"+String(num)+",\"Latitude\":"+String(0)+",\"Lontitude\":"+String(-1)+",\"Satellite\":"+String(gps.satellites.value(), DEC)+",\"Battery\":"+String(battery, DEC) +",\"Status\":"+send_status+"}";
      SendPutRequest(sendDataPut,id);
-digitalWrite(D7, LOW);    // выключаем светодиод
+digitalWrite(D8, LOW);    // выключаем светодиод
      delay(1000);
   }
    smartDelay(1000);//считываение данных с GPS устройства
