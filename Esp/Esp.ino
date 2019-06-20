@@ -40,7 +40,7 @@ long loopTime = 60000; // 60 seconds
 
 double last_filtered_lat = 0.0;
 double last_filtered_lng = 0.0;
-bool first_filter_boot = true;
+bool first_filter_boot = false;
 
 //Константа для проверки точек, если больше 2 метров, откидываем
 const double distance_check = 2;
@@ -242,18 +242,20 @@ if (gps.satellites.value()>3)
                             gps.location.lng(),
                             last_filtered_lat,
                             last_filtered_lng);
-              if(distance < distance_check && first_filter_boot)
+              if(first_filter_boot){
+			  if(distance < distance_check)
               {
                   hasFix = true;
                   latitude.push_back(gps.location.lat());
                   lontitude.push_back(gps.location.lng());
                   Serial.print("Add to LAT vector: "); Serial.println(gps.location.lat(), 11);
                   Serial.print("Add to LON vector: "); Serial.println(gps.location.lng(),11);
-              }else 
-              {
-                last_filtered_lat = gps.location.lat();
-                last_filtered_lng = gps.location.lng();
               }
+			  }else{
+			  last_filtered_lat = gps.location.lat();
+              last_filtered_lng = gps.location.lng();
+			  first_filter_boot = true;
+			  }
         }
       }else
       {
