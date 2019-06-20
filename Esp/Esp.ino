@@ -31,7 +31,7 @@ SoftwareSerial ss(RXPin, TXPin);
 TinyGPSPlus gps;
 WiFiClient clientCommon;
 
-int battery = 0;
+float battery = 0;
 String send_status = "\"Online\"";  
 bool firstBoot = true;
 
