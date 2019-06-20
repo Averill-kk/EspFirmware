@@ -140,7 +140,7 @@ avgsensor = avgsensor + sensorValue;
 getGPSCoord();
 if(firstBoot && WiFi.status() == WL_CONNECTED )
 {
-  String sendDataPut = "{\"id\":\""+id+"\",\"Number\":"+String(num)+",\"Latitude\":"+String(-1)+",\"Lontitude\":"+String(-1)+",\"Satellite\":"+String(gps.satellites.value(), DEC)+",\"Battery\":"+String(battery, DEC) +",\"Status\":"+send_status+"}";
+  String sendDataPut = "{\"id\":\""+id+"\",\"Number\":"+String(num)+",\"Latitude\":"+String(-1)+",\"Lontitude\":"+String(-1)+",\"Satellite\":"+String(gps.satellites.value(), DEC)+",\"Battery\":"+String(battery, 2) +",\"Status\":"+send_status+"}";
   SendPostRequest(sendDataPut);
   firstBoot = false;
 }
@@ -149,7 +149,7 @@ smartDelay(1000);
 if (gps.satellites.value()>3)
       {
 digitalWrite(D8, HIGH);   // включаем светодиод
-  String sendDataPut = "{\"id\":\""+id+"\",\"Number\":"+String(num)+",\"Latitude\":"+String(last_filtered_lat,11)+",\"Lontitude\":"+String(last_filtered_lng,11)+",\"Satellite\":"+String(gps.satellites.value(), DEC)+",\"Battery\":"+String(battery, DEC) +",\"Status\":"+send_status+"}";
+  String sendDataPut = "{\"id\":\""+id+"\",\"Number\":"+String(num)+",\"Latitude\":"+String(last_filtered_lat,11)+",\"Lontitude\":"+String(last_filtered_lng,11)+",\"Satellite\":"+String(gps.satellites.value(), DEC)+",\"Battery\":"+String(battery, 2) +",\"Status\":"+send_status+"}";
   SendPutRequest(sendDataPut,id);
 digitalWrite(D8, LOW);    // выключаем светодиод
   delay(1000);
@@ -158,7 +158,7 @@ digitalWrite(D8, LOW);    // выключаем светодиод
 //Тушить диод отправки данных
      Serial.print("No fix.");
 digitalWrite(D8, HIGH);   // включаем светодиод
-     String sendDataPut = "{\"id\":\""+id+"\",\"Number\":"+String(num)+",\"Latitude\":"+String(0)+",\"Lontitude\":"+String(-1)+",\"Satellite\":"+String(gps.satellites.value(), DEC)+",\"Battery\":"+String(battery, DEC) +",\"Status\":"+send_status+"}";
+     String sendDataPut = "{\"id\":\""+id+"\",\"Number\":"+String(num)+",\"Latitude\":"+String(0)+",\"Lontitude\":"+String(-1)+",\"Satellite\":"+String(gps.satellites.value(), DEC)+",\"Battery\":"+String(battery, 2) +",\"Status\":"+send_status+"}";
      SendPutRequest(sendDataPut,id);
 digitalWrite(D8, LOW);    // выключаем светодиод
      delay(1000);
