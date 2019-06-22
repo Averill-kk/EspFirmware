@@ -165,14 +165,14 @@ void loop() {
           if (distance < distance_check)
           {
                   hasFix = true;
-                  if(count==BUFFER_SIZE+1)
+                  if(count==BUFFER_SIZE)
                     {
                       count = 0;
                     }
                   lat_buffer[count]=gps.location.lat();
                   lng_buffer[count]=gps.location.lng();
                   count++;
-                  if(cur_buffer_size < BUFFER_SIZE+1)
+                  if(cur_buffer_size < BUFFER_SIZE)
                     {
                       cur_buffer_size++;
                     }
