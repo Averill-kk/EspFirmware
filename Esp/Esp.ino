@@ -4,18 +4,18 @@
 #include <ESP8266HTTPClient.h>
 #include <ArduinoOTA.h>
 
-
 #define SSIDNAME "NAVI"
 #define APPSWD "70007725"
 
-#define ESSID "RT-2.4GHz_WiFi_E556"
-#define EKEY "1234567811"
+#define ESSID "Regata2019"
+#define EKEY "Kazan2019"
+#define RSTCOUNTER 10
 
 IPAddress default_IP(192, 168, 240, 1); //defaul IP Address
 
 //Device ID
 String id = String(WiFi.macAddress()).substring(12);
-int num = 1;
+int num = 7;
 
 //Firmware
 String fw = "1.3.1";
@@ -37,6 +37,8 @@ float battery = 0;
 String send_status = "\"Online\"";
 bool firstBoot = true;
 
+unsigned char rstCounter = RSTCOUNTER;
+
 
 const int BUFFER_SIZE = 59;
 double lat_buffer[BUFFER_SIZE];
@@ -45,9 +47,9 @@ int cur_buffer_size=0,count=0;
 
 double last_filtered_lat = 0.0;
 double last_filtered_lng = 0.0;
-bool first_filter_boot = false;
+bool first_filter_boot = true;
 
-//Константа для проверки точек, если больше 10 метров, откидываем
+//Константа для проверки точек, если больше 2 метров, откидываем
 const double distance_check = 10;
 
 
@@ -58,7 +60,7 @@ void setup() {
   ss.begin(GPSBaud);
 
   setWiFiConfig();
-  
+
   Serial.println();
   Serial.println();
   Serial.println("WiFi connected");
@@ -108,10 +110,12 @@ void setup() {
 void loop() {
   //Считываем и фильтруем координаты
   digitalWrite(D7, LOW);    // выключаем светодиод
-
+  smartDelay(1000);
   // read the input on analog pin 0:
   int avgsensor = 0;
   int sensorValue = 0;
+  int sats = gps.satellites.value();
+
   for (int i = 0; i < 3; i++)
   {
     int sensorValue = analogRead(A0);
@@ -119,7 +123,7 @@ void loop() {
   }
 
   // Convert the analog reading (which goes from 0 - 1023) to a voltage (0 - 3.2V):
-  battery = (avgsensor / 3) * (3.2 / 1023.0) * 5.465 ;
+  battery = (avgsensor / 3) * (3.2 / 1023.0) * 5.241 ;
   // print out the value you read:
   Serial.print("sensorValue: ");
   Serial.println(sensorValue);
@@ -128,7 +132,7 @@ void loop() {
 
   if (firstBoot)
   {
-    String sendDataPut = "{\"id\":\"" + id + "\",\"Number\":" + String(num) + ",\"Latitude\":" + String(-1) + ",\"Lontitude\":" + String(-1) + ",\"Satellite\":" + String(gps.satellites.value(), DEC) + ",\"Battery\":" + String(battery, 2) +",\"RSSI\":" + String(WiFi.RSSI(), DEC) + ",\"Status\":" + send_status + "}";
+    String sendDataPut = "{\"id\":\"" + id + "\",\"Number\":" + String(num) + ",\"Latitude\":" + String(-1) + ",\"Lontitude\":" + String(-1) + ",\"Satellite\":" + String(sats, DEC) + ",\"Battery\":" + String(battery, 2) + ",\"Status\":" + send_status + "}";
     SendPostRequest(sendDataPut);
     firstBoot = false;
   }
@@ -136,14 +140,20 @@ void loop() {
   if (WiFi.status() != WL_CONNECTED)
   {
     Serial.println("No wifi connect");
+    rstCounter--;
+    if (rstCounter <= 0)
+    {
+      ESP.restart();
+      rstCounter = RSTCOUNTER;
+    }
   }
   else
   {
     bool hasFix = false;
     //Если спутников больше 3, отправляем данные
-    if (gps.satellites.value() > 3)
+    if (sats > 3)
     {
-      if (gps.location.isUpdated())
+            if (gps.location.isUpdated())
       {
         //Считаем растояние до новой точки
         double distance = TinyGPSPlus::distanceBetween(
@@ -185,37 +195,30 @@ void loop() {
     Serial.print("LAST filtered LAT= ");  Serial.println(last_filtered_lat, 11);
     Serial.print("LAST filtered LONG= "); Serial.println(last_filtered_lng, 11);
   }
-
-      //digitalWrite(D8, HIGH);   // включаем светодиод
-      String sendDataPut = "{\"id\":\"" + id + "\",\"Number\":" + String(num) + ",\"Latitude\":" + String(last_filtered_lat, 11) + ",\"Lontitude\":" + String(last_filtered_lng, 11) + ",\"Satellite\":" + String(gps.satellites.value(), DEC) + ",\"Battery\":" + String(battery, 2)+ ",\"RSSI\":" + String(WiFi.RSSI(), DEC) + ",\"Status\":" + send_status + "}";
+      digitalWrite(D8, HIGH);   // включаем светодиод
+      String sendDataPut = "{\"id\":\"" + id + "\",\"Number\":" + String(num) + ",\"Latitude\":" + String(last_filtered_lat, 11) + ",\"Lontitude\":" + String(last_filtered_lng, 11) + ",\"Satellite\":" + String(sats, DEC) + ",\"Battery\":" + String(battery, 2) + ",\"Status\":" + send_status + "}";
       SendPutRequest(sendDataPut, id);
-      //digitalWrite(D8, LOW);    // выключаем светодиод
-
+      digitalWrite(D8, LOW);    // выключаем светодиод
+      //delay(100);
     }
     else
     {
       //Тушить диод отправки данных
       Serial.print("No fix.");
-      String sendDataPut = "{\"id\":\"" + id + "\",\"Number\":" + String(num) + ",\"Latitude\":" + String(0) + ",\"Lontitude\":" + String(-1) + ",\"Satellite\":" + String(gps.satellites.value(), DEC) + ",\"Battery\":" + String(battery, 2) + ",\"RSSI\":" + String(WiFi.RSSI(), DEC) +",\"Status\":" + send_status + "}";
+      String sendDataPut = "{\"id\":\"" + id + "\",\"Number\":" + String(num) + ",\"Latitude\":" + String(0) + ",\"Lontitude\":" + String(-1) + ",\"Satellite\":" + String(sats, DEC) + ",\"Battery\":" + String(battery, 2) + ",\"Status\":" + send_status + "}";
       SendPutRequest(sendDataPut, id);
+      //delay(100);
     }
-
     digitalWrite(D7, HIGH);    // включаем светодиод
+    delay(100);
     ArduinoOTA.handle();
     print_status(); //Print status
-    for (int i = 0; i < gps.satellites.value(); i++)
-    {
-      digitalWrite(D8, HIGH);
-      delay(50);
-      digitalWrite(D8, LOW);
-    }
   }
-  smartDelay(1000);
 }
 
 void setWiFiConfig() {
   //WiFi mode is remembered by the esp sdk
-  if (WiFi.getMode() != WIFI_STA) 
+  if (WiFi.getMode() != WIFI_STA)
   {
     //set default AP
     String mac = WiFi.macAddress();
@@ -226,10 +229,10 @@ void setWiFiConfig() {
     WiFi.softAP(softApssid, APPSWD);
     WiFi.softAPConfig(default_IP, default_IP, IPAddress(255, 255, 255, 0));   //set default ip for AP mode
   }
-  
+
   //set STA mode
   WiFi.begin(ESSID, EKEY); // connect to AP with credentials remembered by esp sdk
-  if (WiFi.waitForConnectResult() != WL_CONNECTED && WiFi.getMode() == WIFI_STA) 
+  if (WiFi.waitForConnectResult() != WL_CONNECTED && WiFi.getMode() == WIFI_STA)
   {
     // if STA didn't connect, start AP
     WiFi.mode(WIFI_AP_STA); // STA must be active for library connects
