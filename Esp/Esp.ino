@@ -7,8 +7,8 @@
 #define SSIDNAME "NAVI"
 #define APPSWD "70007725"
 
-#define ESSID "Regata2019"
-#define EKEY "Kazan2019"
+#define ESSID "RT-2.4GHz_WiFi_E556"
+#define EKEY "1234567811"
 #define RSTCOUNTER 10
 
 IPAddress default_IP(192, 168, 240, 1); //defaul IP Address
@@ -47,7 +47,7 @@ int cur_buffer_size=0,count=0;
 
 double last_filtered_lat = 0.0;
 double last_filtered_lng = 0.0;
-bool first_filter_boot = true;
+bool first_filter_boot = false;
 
 //Константа для проверки точек, если больше 2 метров, откидываем
 const double distance_check = 10;
@@ -132,7 +132,7 @@ void loop() {
 
   if (firstBoot)
   {
-    String sendDataPut = "{\"id\":\"" + id + "\",\"Number\":" + String(num) + ",\"Latitude\":" + String(-1) + ",\"Lontitude\":" + String(-1) + ",\"Satellite\":" + String(sats, DEC) + ",\"Battery\":" + String(battery, 2) + ",\"Status\":" + send_status + "}";
+    String sendDataPut = "{\"id\":\"" + id + "\",\"Number\":" + String(num) + ",\"Latitude\":" + String(-1) + ",\"Lontitude\":" + String(-1) + ",\"Satellite\":" + String(gps.satellites.value(), DEC) + ",\"Battery\":" + String(battery, 2) +",\"RSSI\":" + String(WiFi.RSSI(), DEC) + ",\"Status\":" + send_status + "}";
     SendPostRequest(sendDataPut);
     firstBoot = false;
   }
@@ -196,7 +196,7 @@ void loop() {
     Serial.print("LAST filtered LONG= "); Serial.println(last_filtered_lng, 11);
   }
       digitalWrite(D8, HIGH);   // включаем светодиод
-      String sendDataPut = "{\"id\":\"" + id + "\",\"Number\":" + String(num) + ",\"Latitude\":" + String(last_filtered_lat, 11) + ",\"Lontitude\":" + String(last_filtered_lng, 11) + ",\"Satellite\":" + String(sats, DEC) + ",\"Battery\":" + String(battery, 2) + ",\"Status\":" + send_status + "}";
+      String sendDataPut = "{\"id\":\"" + id + "\",\"Number\":" + String(num) + ",\"Latitude\":" + String(last_filtered_lat, 11) + ",\"Lontitude\":" + String(last_filtered_lng, 11) + ",\"Satellite\":" + String(gps.satellites.value(), DEC) + ",\"Battery\":" + String(battery, 2)+ ",\"RSSI\":" + String(WiFi.RSSI(), DEC) + ",\"Status\":" + send_status + "}";
       SendPutRequest(sendDataPut, id);
       digitalWrite(D8, LOW);    // выключаем светодиод
       //delay(100);
@@ -205,7 +205,7 @@ void loop() {
     {
       //Тушить диод отправки данных
       Serial.print("No fix.");
-      String sendDataPut = "{\"id\":\"" + id + "\",\"Number\":" + String(num) + ",\"Latitude\":" + String(0) + ",\"Lontitude\":" + String(-1) + ",\"Satellite\":" + String(sats, DEC) + ",\"Battery\":" + String(battery, 2) + ",\"Status\":" + send_status + "}";
+      String sendDataPut = "{\"id\":\"" + id + "\",\"Number\":" + String(num) + ",\"Latitude\":" + String(0) + ",\"Lontitude\":" + String(-1) + ",\"Satellite\":" + String(gps.satellites.value(), DEC) + ",\"Battery\":" + String(battery, 2) + ",\"RSSI\":" + String(WiFi.RSSI(), DEC) +",\"Status\":" + send_status + "}";
       SendPutRequest(sendDataPut, id);
       //delay(100);
     }
