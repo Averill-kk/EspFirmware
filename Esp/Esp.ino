@@ -18,7 +18,7 @@ String id = String(WiFi.macAddress()).substring(12);
 int num = 7;
 
 //Firmware
-String fw = "1.3.1";
+String fw = "1.3.2";
 
 //WebAPi Info
 int computerHostPort = 5050;
@@ -48,6 +48,9 @@ int cur_buffer_size=0,count=0;
 double last_filtered_lat = 0.0;
 double last_filtered_lng = 0.0;
 bool first_filter_boot = false;
+
+//Проверка GPS устройства
+bool check_wiring = false;
 
 //Константа для проверки точек, если больше 2 метров, откидываем
 const double distance_check = 10;
@@ -205,7 +208,11 @@ void loop() {
     {
       //Тушить диод отправки данных
       Serial.print("No fix.");
-      String sendDataPut = "{\"id\":\"" + id + "\",\"Number\":" + String(num) + ",\"Latitude\":" + String(0) + ",\"Lontitude\":" + String(-1) + ",\"Satellite\":" + String(gps.satellites.value(), DEC) + ",\"Battery\":" + String(battery, 2) + ",\"RSSI\":" + String(WiFi.RSSI(), DEC) +",\"Status\":" + send_status + "}";
+	  if(check_wiring)
+	  {
+		  sats = -99;
+	  }
+      String sendDataPut = "{\"id\":\"" + id + "\",\"Number\":" + String(num) + ",\"Latitude\":" + String(0) + ",\"Lontitude\":" + String(-1) + ",\"Satellite\":" + String(sats, DEC) + ",\"Battery\":" + String(battery, 2) + ",\"RSSI\":" + String(WiFi.RSSI(), DEC) +",\"Status\":" + send_status + "}";
       SendPutRequest(sendDataPut, id);
       //delay(100);
     }
@@ -291,7 +298,10 @@ static void print_status()
   Serial.println(WiFi.macAddress());
   if (millis() > 5000 && gps.charsProcessed() < 10)
   {
+	check_wiring = true;
     Serial.println(F("No GPS detected: check wiring."));
+  }else{
+	  check_wiring = false;
   }
   Serial.print("RSSI:");
   Serial.println(WiFi.RSSI());
